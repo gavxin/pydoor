@@ -5,7 +5,6 @@
 #include "pydoor.h"
 
 #define PY_SCRIPT_NAME "door.py"
-#define LOG_FILENAME "door.log"
 
 short volatile inited = 0;
 HANDLE thread = INVALID_HANDLE_VALUE;
@@ -39,8 +38,11 @@ int RunDoor() {
   }
 
   PyRun_SimpleFile(file, PY_SCRIPT_NAME);
+
   Py_Finalize();
   fclose(file);
+
+  AppendLog("RunDoor end.");
   return 0;
 }
 
@@ -56,10 +58,12 @@ BOOL WINAPI DllMain(
   switch (fdwReason) {
   case DLL_PROCESS_ATTACH:
     if (InterlockedCompareExchange16(&inited, 1, 0) == 0) {
+      AppendLog("Pydoor DLL Attach!");
       thread = ::CreateThread(NULL, 0, ThreadWork, NULL, 0, NULL);
     }
     break;
   case DLL_PROCESS_DETACH: {
+    AppendLog("Pydoor DLL Detach!");
     DWORD ret = ::TerminateThread(thread, 1);
     if (ret == STILL_ACTIVE) {
       return FALSE;
@@ -71,3 +75,5 @@ BOOL WINAPI DllMain(
   }
   return TRUE;
 }
+
+// vim: sw=2:ts=2

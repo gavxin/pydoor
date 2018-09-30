@@ -1,28 +1,58 @@
 import time
 import sys
+import logging
+import ctypes
+import traceback
 
-f = open('door.log', 'w')
+OutputDebugString = ctypes.windll.kernel32.OutputDebugStringW
+#OutputDebugString.argtypes = [ctypes.c_char_p]
+  
+class DbgViewHandler(logging.Handler):
+  def __init__(self):
+    logging.Handler.__init__(self)
+        
+  def emit(self, record):
+    OutputDebugString(self.format(record))
 
-f.write("Started...\n")
-f.flush()
+logger = logging.getLogger("pydoor")
+def init_logger():
+  logger.setLevel(logging.DEBUG)
+  ch = DbgViewHandler()
+  ch.setLevel(logging.DEBUG)
+  formatter = logging.Formatter("%(asctime) -25s [%(thread) 5s] %(levelname) -8s %(name) -25s %(message)s")
+  ch.setFormatter(formatter)
+  logger.addHandler(ch)
 
-class Unbuffered(object):
-   def __init__(self, stream):
-       self.stream = stream
-   def write(self, data):
-       self.stream.write(data)
-       self.stream.flush()
-   def flush(self):
-       self.stream.flush()
-   def __getattr__(self, attr):
-       return getattr(self.stream, attr)
+class InfoStreamToLogger(object):
+  def write(self, data):
+    logger.info(data)
+  def flush(self):
+    pass
 
-sys.stdout = sys.stdin = sys.__stdout__ = Unbuffered(f)
+class ErrorStreamToLogger(object):
+  def write(self, data):
+    logger.error(data)
+  def flush(self):
+    pass
 
-import IPython
-IPython.embed_kernel()
+sys.stdout = sys.__stdout__ = InfoStreamToLogger()
+sys.stderr = sys.__stderr__ = ErrorStreamToLogger()
 
-f.write("Stoped\n")
-f.flush()
+def main():
+  init_logger()
+  try:
+    logger.info("door.py started, embed_kernel...")
 
-f.close()
+    import IPython
+    IPython.embed_kernel()
+    logger.info("door.py end.")
+  except Exception as e:
+    err = traceback.format_exc()
+    logger.error("Exception!\n" + err)
+  
+if __name__ == "__main__":
+  main()
+
+
+    
+
