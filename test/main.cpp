@@ -6,7 +6,11 @@
 int main() {
   printf("Press enter to load library...");
   getchar();
-  ::LoadLibraryA("pydoor.dll");
+  HMODULE r =::LoadLibraryA("pydoor.dll");
+  if (r == NULL) {
+	printf("LoadLibrary error!");
+	return 0;
+  }
   printf("Sleep...");
   Sleep(60 * 60 * 1000); // 1 hour
   // RunDoor();
